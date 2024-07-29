@@ -7,13 +7,7 @@ import cors from "cors";
 const app = express();
 
 const allowedOrigins = [
-  // process.env.CORS_ORIGIN_PRODUCTION,
-  // process.env.CORS_ORIGIN_DEV,
-  "https://videotube-frontend.vercel.app",
-  "https://client-master-seven.vercel.app",
-  "http://localhost:5173",
-  "https://videotube-rust.vercel.app",
-  "http://localhost:5174",
+  "https://videotube-tweet.vercel.app"
 ];
 
 // Log allowed origins to verify they are set correctly
