@@ -2,16 +2,11 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
-
-
 const app = express();
 
 const allowedOrigins = [
   "https://videotube-tweet.vercel.app"
 ];
-
-// Log allowed origins to verify they are set correctly
-console.log('Allowed Origins:', allowedOrigins);
 
 app.use(
   cors({
