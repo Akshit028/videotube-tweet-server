@@ -8,8 +8,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Like } from "../models/like.model.js";
 import { Comment } from "../models/comment.model.js";
 import {
-  uploadOnCloudinary,
-  deleteFromCloudinary,
+  uploadOnImageKit,
+  deleteFromImageKit,
 } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -114,8 +114,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Thumbnail is required to publish");
 
   const [videoFile, thumbnailFile] = await Promise.all([
-    uploadOnCloudinary(videoLocalPath, video_upOptions),
-    uploadOnCloudinary(thumbnailLocalPath, thumbnail_upOptions),
+    uploadOnImageKit(videoLocalPath, video_upOptions),
+    uploadOnImageKit(thumbnailLocalPath, thumbnail_upOptions),
   ]);
 
   if (!videoFile || !thumbnailFile) {
@@ -388,14 +388,14 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   // If a new thumbnail was provided, add it to the update object
   if (thumbnailLocalPath) {
-    const thumbnailFile = await uploadOnCloudinary(
+    const thumbnailFile = await uploadOnImageKit(
       thumbnailLocalPath,
       thumbnail_upOptions
     );
 
     if (!thumbnailFile) throw new ApiError(501, "Thumbnail uploading failed");
 
-    await deleteFromCloudinary(currentVideo?.thumbnail.fileId);
+    await deleteFromImageKit(currentVideo?.thumbnail.fileId);
 
     update.$set.thumbnail = {
       fileId: thumbnailFile.public_id,
@@ -429,8 +429,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
   await Promise.all([
     Like.deleteMany({ video: videoId }),
     Comment.deleteMany({ video: videoId }),
-    deleteFromCloudinary(currentVideo?.video.fileId),
-    deleteFromCloudinary(currentVideo?.thumbnail.fileId),
+    deleteFromImageKit(currentVideo?.video.fileId),
+    deleteFromImageKit(currentVideo?.thumbnail.fileId),
   ]);
 
   return res
