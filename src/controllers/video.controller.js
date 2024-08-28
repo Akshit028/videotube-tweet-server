@@ -10,16 +10,12 @@ import { Comment } from "../models/comment.model.js";
 import {
   uploadOnImageKit,
   deleteFromImageKit,
-} from "../utils/cloudinary.js";
+} from "../utils/cloudinary.js"; // Updated import to imageKit.js
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
 
   const pipeline = [];
-  //first create a search index using atlas
-  //then use $search to search the videos
-  //search index is created on title and description fields
-  //here i have created "search-videos" index on "videos" collection
   if (query) {
     pipeline.push({
       $search: {
@@ -42,11 +38,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
     });
   }
-  // fetch videos only that are set isPublished as true
+
   pipeline.push({ $match: { isPublished: true } });
 
-  //sortBy can be views, createdAt, duration
-  //sortType can be ascending(-1) or descending(1)
   if (sortBy && sortType) {
     pipeline.push({
       $sort: {
@@ -105,11 +99,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   const videoLocalPath = req.files?.video[0]?.path;
-
   if (!videoLocalPath) throw new ApiError(401, "Video is required to publish");
 
   const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
-
   if (!thumbnailLocalPath)
     throw new ApiError(401, "Thumbnail is required to publish");
 
@@ -127,12 +119,12 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
   const video = await Video.create({
     video: {
-      fileId: videoFile.public_id,
-      url: videoFile.playback_url,
+      fileId: videoFile.fileId, // Ensure ImageKit returns fileId
+      url: videoFile.url, // Ensure ImageKit returns url
     },
     thumbnail: {
-      fileId: thumbnailFile.public_id,
-      url: thumbnailFile.secure_url,
+      fileId: thumbnailFile.fileId, // Ensure ImageKit returns fileId
+      url: thumbnailFile.url, // Ensure ImageKit returns url
     },
     duration: videoFile.duration,
     title,
@@ -386,7 +378,6 @@ const updateVideo = asyncHandler(async (req, res) => {
     },
   };
 
-  // If a new thumbnail was provided, add it to the update object
   if (thumbnailLocalPath) {
     const thumbnailFile = await uploadOnImageKit(
       thumbnailLocalPath,
@@ -398,8 +389,8 @@ const updateVideo = asyncHandler(async (req, res) => {
     await deleteFromImageKit(currentVideo?.thumbnail.fileId);
 
     update.$set.thumbnail = {
-      fileId: thumbnailFile.public_id,
-      url: thumbnailFile.secure_url,
+      fileId: thumbnailFile.fileId,
+      url: thumbnailFile.url,
     };
   }
 
@@ -425,7 +416,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
   if (!deleteVideo) throw new ApiError(500, "Video deletion failed");
 
-  // delete video likes, comments and cloudinary files in parallel
   await Promise.all([
     Like.deleteMany({ video: videoId }),
     Comment.deleteMany({ video: videoId }),
@@ -516,7 +506,6 @@ const updateVideoViews = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Video not found");
   }
 
-  // Find the user and check if they've watched this video before
   const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -527,11 +516,8 @@ const updateVideoViews = asyncHandler(async (req, res) => {
   );
 
   if (!watchHistoryEntry) {
-    // User hasn't watched this video before
-    // Increment view count
     await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
-    // Add to watch history
     user.watchHistory.push({
       video: videoId,
       watchedAt: new Date(),
@@ -539,7 +525,6 @@ const updateVideoViews = asyncHandler(async (req, res) => {
 
     await user.save();
   } else {
-    // User has watched this video before, just update the watchedAt
     watchHistoryEntry.watchedAt = new Date();
     await user.save();
   }
